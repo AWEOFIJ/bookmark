@@ -7,6 +7,7 @@ const emit = defineEmits<{ close: []; saved: [] }>()
 
 const bookmarks = useBookmarks()
 const { collections, tags, flatten } = useCollections()
+const ui = useUI()
 
 const form = reactive({
   url: '',
@@ -51,6 +52,20 @@ watch(
 )
 
 const flattened = computed(() => flatten())
+
+// 來自分享目標（Web Share Target）的草稿 → 自動填 URL/標題 + 抓 meta
+watch(
+  () => ui.shareDraft,
+  (d) => {
+    if (d) {
+      form.url = d.url || ''
+      if (d.title) form.title = d.title
+      ui.clearShareDraft()
+      if (form.url) fetchMeta()
+    }
+  },
+  { immediate: true },
+)
 
 async function fetchMeta() {
   const url = form.url.trim()

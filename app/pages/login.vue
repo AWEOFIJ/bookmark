@@ -13,6 +13,7 @@ const error = ref('')
 const info = ref('')
 const testPassword = ref('')
 const loading = ref(false)
+const route = useRoute()
 
 onMounted(() => {
   theme.init()
@@ -59,7 +60,8 @@ async function submitLogin() {
   error.value = ''
   try {
     await login(email.value.trim(), password.value)
-    await navigateTo('/')
+    const returnTo = typeof route.query.returnTo === 'string' ? route.query.returnTo : '/'
+    await navigateTo(returnTo)
   } catch (e: any) {
     error.value = e?.data?.statusMessage || '登入失敗'
   } finally {
