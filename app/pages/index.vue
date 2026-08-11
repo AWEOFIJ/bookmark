@@ -34,7 +34,7 @@ onMounted(async () => {
       sessionStorage.removeItem('bm-draft')
       try {
         const d = JSON.parse(draft)
-        ui.setShareDraft({ url: d.url || '', title: d.title || '' })
+        setShareDraft({ url: d.url || '', title: d.title || '' })
       } catch {
         // 解析失敗忽略
       }
