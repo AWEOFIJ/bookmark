@@ -5,7 +5,7 @@ import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 const { user, loading, fetchMe } = useAuth()
 const { load: loadCollections } = useCollections()
 const bookmarks = useBookmarks()
-const { showAdd, showImport, editing, openEdit, closeAll } = useUI()
+const { showAdd, showImport, editing, openEdit, closeAll, setShareDraft } = useUI()
 
 // Vue 3 template 只對「解構後」的 ref 自動解包 — 直接取物件屬性不會解包
 const { items, loading: bookmarksLoading } = bookmarks
@@ -26,6 +26,20 @@ onMounted(async () => {
   }
   loadCollections()
   bookmarks.fetch()
+
+  // 從分享目標（/add）帶來的草稿 → 開新增 modal
+  if (import.meta.client) {
+    const draft = sessionStorage.getItem('bm-draft')
+    if (draft) {
+      sessionStorage.removeItem('bm-draft')
+      try {
+        const d = JSON.parse(draft)
+        ui.setShareDraft({ url: d.url || '', title: d.title || '' })
+      } catch {
+        // 解析失敗忽略
+      }
+    }
+  }
 })
 
 const ready = computed(() => !loading.value && !!user.value)

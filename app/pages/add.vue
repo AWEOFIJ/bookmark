@@ -12,11 +12,13 @@ onMounted(async () => {
     await navigateTo(`/login?returnTo=${encodeURIComponent(route.fullPath)}`)
     return
   }
-  // 已登入 → 帶入分享的 URL/標題 → 回主頁開新增 modal
+  // 已登入 → 用 sessionStorage 傳草稿（跨頁面可靠）→ 回主頁開新增 modal
   const url = String(route.query.url || route.query.text || '').trim()
   const title = String(route.query.title || '').trim()
   if (url) {
-    ui.setShareDraft({ url, title })
+    if (import.meta.client) {
+      sessionStorage.setItem('bm-draft', JSON.stringify({ url, title }))
+    }
   }
   await navigateTo('/', { replace: true })
 })
