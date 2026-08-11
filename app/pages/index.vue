@@ -5,7 +5,7 @@ import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 const { user, loading, fetchMe } = useAuth()
 const { load: loadCollections } = useCollections()
 const bookmarks = useBookmarks()
-const { showAdd, showImport, editing, openEdit, closeAll, setShareDraft } = useUI()
+const { showAdd, showImport, editing, openEdit, closeAll, openAdd } = useUI()
 
 // Vue 3 template 只對「解構後」的 ref 自動解包 — 直接取物件屬性不會解包
 const { items, loading: bookmarksLoading } = bookmarks
@@ -18,6 +18,9 @@ async function onSaved() {
   loadCollections()
 }
 
+// 從分享目標（/add）帶來的草稿 → 開新增 modal
+const initialDraft = ref<{ url: string; title: string } | null>(null)
+
 onMounted(async () => {
   await fetchMe()
   if (!user.value) {
@@ -27,14 +30,14 @@ onMounted(async () => {
   loadCollections()
   bookmarks.fetch()
 
-  // 從分享目標（/add）帶來的草稿 → 開新增 modal
   if (import.meta.client) {
     const draft = sessionStorage.getItem('bm-draft')
     if (draft) {
       sessionStorage.removeItem('bm-draft')
       try {
         const d = JSON.parse(draft)
-        setShareDraft({ url: d.url || '', title: d.title || '' })
+        initialDraft.value = { url: d.url || '', title: d.title || '' }
+        openAdd()
       } catch {
         // 解析失敗忽略
       }
@@ -75,7 +78,7 @@ const ready = computed(() => !loading.value && !!user.value)
         />
       </div>
 
-      <BookmarkModal v-if="showAdd" :bookmark="editing" @close="closeAll" @saved="onSaved" />
+      <BookmarkModal v-if="showAdd" :bookmark="editing" :initial="initialDraft" @close="closeAll" @saved="onSaved" />
       <ImportModal v-if="showImport" @close="closeAll" @imported="onSaved" />
     </template>
   </div>

@@ -2,12 +2,14 @@
 import { ArrowPathIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import type { BookmarkItem } from '~/composables/useBookmarks'
 
-const props = defineProps<{ bookmark?: BookmarkItem | null }>()
+const props = defineProps<{
+  bookmark?: BookmarkItem | null
+  initial?: { url: string; title: string } | null
+}>()
 const emit = defineEmits<{ close: []; saved: [] }>()
 
 const bookmarks = useBookmarks()
 const { collections, tags, flatten } = useCollections()
-const ui = useUI()
 
 const form = reactive({
   url: '',
@@ -53,14 +55,13 @@ watch(
 
 const flattened = computed(() => flatten())
 
-// 來自分享目標（Web Share Target）的草稿 → 自動填 URL/標題 + 抓 meta
+// 來自分享目標的草稿（prop 傳遞，mount 時即有值）→ 自動填 URL/標題 + 抓 meta
 watch(
-  () => ui.shareDraft,
+  () => props.initial,
   (d) => {
     if (d) {
       form.url = d.url || ''
       if (d.title) form.title = d.title
-      ui.clearShareDraft()
       if (form.url) fetchMeta()
     }
   },
