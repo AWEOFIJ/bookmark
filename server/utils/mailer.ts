@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { writeFile, mkdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import nodemailer from 'nodemailer'
 
@@ -29,7 +30,7 @@ export interface MailResult {
 export async function sendPasswordEmail(to: string, password: string): Promise<MailResult> {
   const smtpHost = process.env.SMTP_HOST
   if (!smtpHost) {
-    // 測試模式
+    // 測試模式 — 寫入系統暫存（Vercel serverless 唯讀 /home，但 /tmp 可寫）
     const dir = join(tmpdir(), 'bookmark-mail')
     await mkdir(dir, { recursive: true })
     const file = join(dir, `${Date.now()}-${to.replace(/[^a-zA-Z0-9]/g, '_')}.txt`)
