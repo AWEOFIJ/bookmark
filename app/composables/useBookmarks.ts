@@ -70,7 +70,9 @@ export const useBookmarks = () => {
 
   async function create(data: Partial<BookmarkItem> & { url: string }) {
     const created = await $fetch<BookmarkItem>('/api/bookmarks', { method: 'POST', body: data })
-    await fetch()
+    // 本地插入頂部，不重新抓列表（避免閃爍）
+    items.value = [created, ...items.value]
+    total.value += 1
     return created
   }
 
@@ -79,13 +81,19 @@ export const useBookmarks = () => {
       method: 'PATCH',
       body: data,
     })
-    await fetch()
+    // 本地替換單筆，不重新抓列表（避免閃爍）
+    const idx = items.value.findIndex((i) => i.id === id)
+    if (idx !== -1) {
+      items.value = [...items.value.slice(0, idx), updated, ...items.value.slice(idx + 1)]
+    }
     return updated
   }
 
   async function remove(id: string) {
     await $fetch(`/api/bookmarks/${id}`, { method: 'DELETE' })
-    await fetch()
+    // 本地移除，不重新抓列表
+    items.value = items.value.filter((i) => i.id !== id)
+    total.value = Math.max(0, total.value - 1)
   }
 
   function setFilter(patch: Partial<BookmarkFilters>) {
