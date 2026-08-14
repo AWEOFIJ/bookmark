@@ -27,6 +27,7 @@ export const useBookmarks = () => {
   const items = useState<BookmarkItem[]>('bookmarks:items', () => [])
   const total = useState<number>('bookmarks:total', () => 0)
   const loading = useState<boolean>('bookmarks:loading', () => false)
+  const loadedOnce = useState<boolean>('bookmarks:loadedOnce', () => false)
   const filters = useState<BookmarkFilters>('bookmarks:filters', () => ({
     q: '',
     collection: 'all',
@@ -36,7 +37,8 @@ export const useBookmarks = () => {
   }))
 
   async function fetch() {
-    loading.value = true
+    // 只在「整站首次載入」顯示載入中 — 之後切換篩選/搜尋都不閃爍
+    if (!loadedOnce.value) loading.value = true
     try {
       const params: Record<string, string> = {}
       const hasQuery = !!filters.value.q.trim()
@@ -52,6 +54,7 @@ export const useBookmarks = () => {
       const res = await $fetch<{ items: BookmarkItem[]; total: number }>('/api/bookmarks', { params })
       items.value = res.items
       total.value = res.total
+      loadedOnce.value = true
     } finally {
       loading.value = false
     }
