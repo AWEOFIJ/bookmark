@@ -22,6 +22,9 @@ export interface BookmarkFilters {
   unread: boolean
 }
 
+// 篩選 watcher 全域只註冊一次（module-level flag，避免每個元件各自註冊）
+let useBookmarksWatchRegistered = false
+
 // 書籤列表 + CRUD
 export const useBookmarks = () => {
   const items = useState<BookmarkItem[]>('bookmarks:items', () => [])
@@ -61,15 +64,20 @@ export const useBookmarks = () => {
   }
 
   // 篩選條件改變 → debounce 後自動重新抓取（搜尋輸入不每個字都打 API）
+  // 只註冊「一次」：useBookmarks 被 layout/sidebar/index/每張 BookmarkCard 呼叫，
+  // 若每次呼叫都註冊 watch，切換篩選會觸發 N 個並行 fetch → 列表被替換 N 次 → 畫面頻閃
   let filterTimer: ReturnType<typeof setTimeout> | null = null
-  watch(
-    filters,
-    () => {
-      if (filterTimer) clearTimeout(filterTimer)
-      filterTimer = setTimeout(fetch, 250)
-    },
-    { deep: true },
-  )
+  if (!useBookmarksWatchRegistered && import.meta.client) {
+    useBookmarksWatchRegistered = true
+    watch(
+      filters,
+      () => {
+        if (filterTimer) clearTimeout(filterTimer)
+        filterTimer = setTimeout(fetch, 250)
+      },
+      { deep: true },
+    )
+  }
 
   async function create(data: Partial<BookmarkItem> & { url: string }) {
     const created = await $fetch<BookmarkItem>('/api/bookmarks', { method: 'POST', body: data })
