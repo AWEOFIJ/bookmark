@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "nuxtjs",
-  "buildCommand": "npm run build",
+  "buildCommand": "npx prisma migrate deploy && npm run build",
   "outputDirectory": ".output/public",
   "regions": ["hkg1"]
 }
