@@ -50,40 +50,12 @@ npx tsx prisma/seed.ts   # 建立 admin 帳號
 npm run dev   # http://localhost:3000
 ```
 
-## 🔐 Google 帳號登入設定
-
-登入頁的「使用 Google 帳號登入」按鈕，需要先在 **Google Cloud Console** 建立 OAuth 憑證：
-
-1. 前往 [Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials)（需先建立或選擇專案）
-2. 點 **Create Credentials → OAuth client ID**
-3. Application type 選 **Web application**
-4. 在 **Authorized redirect URIs** 加入：
-   - 本機：`http://localhost:3000/api/auth/google/callback`
-   - 正式（Vercel）：`https://hackmad.net/api/auth/google/callback`（換成你的網域）
-5. 建立後複製 **Client ID** 與 **Client Secret**，填入環境變數：
-   ```bash
-   GOOGLE_CLIENT_ID="xxxx.apps.googleusercontent.com"
-   GOOGLE_CLIENT_SECRET="xxxx"
-   ```
-6. 重新啟動 / 重新部署即可 — 登入頁會自動出現 Google 按鈕
-
-> 若使用者先用 Email+密碼建立帳號，之後再用同一個 Gmail 走 Google 登入，系統會自動**綁定**（合併成同一帳號，書籤不遺失）。
-
-## ☁️ 部署到 Vercel
-
-1. 建立 **Neon** PostgreSQL（Vercel Marketplace 整合）
-2. 設定環境變數：`DATABASE_URL`、`NUXT_SESSION_PASSWORD`（啟用 Google 登入再加 `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`）
-3. 套用資料庫遷移：`npx prisma migrate deploy`
-4. `vercel --prod`
-
-> 註：未設定 `GOOGLE_CLIENT_ID` 時，Google 按鈕不會顯示，僅保留 Email+密碼登入。
-
 ## ⚠️ 安全說明
 
 - **Google 登入**：使用 Google OAuth 2.0 Authorization Code flow + state 參數防 CSRF，安全性高，適合公開部署
 - **Email+密碼模式**：任何知道 Gmail 的人即可登入該帳號 — 僅建議私人/家庭使用
 - 用 Email+密碼建立的帳號若被 Google 登入綁定後，密碼仍可用（雙通道登入）
-- `NUXT_SESSION_PASSWORD` 務必改為隨機長字串
+- Session 簽章密碼務必改為隨機長字串
 
 ## 📄 License
 
