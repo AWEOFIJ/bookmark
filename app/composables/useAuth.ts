@@ -1,11 +1,18 @@
 // 登入狀態管理
+export interface AuthUser {
+  id: string
+  email: string
+  name?: string | null
+  avatar?: string | null
+}
+
 export const useAuth = () => {
-  const user = useState<{ id: string; email: string } | null>('auth:user', () => null)
+  const user = useState<AuthUser | null>('auth:user', () => null)
   const loading = useState<boolean>('auth:loading', () => true)
 
   async function fetchMe() {
     try {
-      const res = await $fetch<{ user: { id: string; email: string } | null }>('/api/auth/me')
+      const res = await $fetch<{ user: AuthUser | null }>('/api/auth/me')
       user.value = res.user
     } catch {
       user.value = null
@@ -15,7 +22,7 @@ export const useAuth = () => {
   }
 
   async function login(email: string, password: string) {
-    const res = await $fetch<{ id: string; email: string }>('/api/auth/login', {
+    const res = await $fetch<AuthUser>('/api/auth/login', {
       method: 'POST',
       body: { email, password },
     })

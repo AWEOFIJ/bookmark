@@ -14,8 +14,13 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Server-only secrets (overridden by .env NUXT_SESSION_PASSWORD)
     sessionPassword: process.env.NUXT_SESSION_PASSWORD || 'bookmark-dev-secret-change-me-in-production',
+    // Google OAuth（登入用）
+    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     public: {
       appName: 'bookMark',
+      // 讓前端知道是否啟用 Google 登入按鈕
+      googleLoginEnabled: Boolean(process.env.GOOGLE_CLIENT_ID),
     },
   },
 

@@ -10,7 +10,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) {
+  if (!user || !user.password) {
+    // 沒有帳號，或帳號是 Google-only（無密碼）→ 一律顯示相同錯誤
     throw createError({ statusCode: 401, statusMessage: '帳號或密碼錯誤' })
   }
 
@@ -22,5 +23,5 @@ export default defineEventHandler(async (event) => {
   const session = await getBmSession(event)
   await session.update({ userId: user.id, email: user.email })
 
-  return { id: user.id, email: user.email }
+  return { id: user.id, email: user.email, name: user.name, avatar: user.avatar }
 })
