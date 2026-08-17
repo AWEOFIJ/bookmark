@@ -1,5 +1,12 @@
 import tailwindcss from '@tailwindcss/vite'
 
+// 安全：Vercel 正式 build 必須提供 NUXT_SESSION_PASSWORD，
+// 避免使用公開的 fallback key（session 可被偽造）
+// 只在 Vercel build（VERCEL=1）檢查 — GH Actions 安裝階段（nuxt prepare）沒有此變數
+if (process.env.VERCEL === '1' && process.env.NODE_ENV === 'production' && !process.env.NUXT_SESSION_PASSWORD) {
+  throw new Error('NUXT_SESSION_PASSWORD is required in production')
+}
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -45,6 +52,21 @@ export default defineNuxtConfig({
 
   nitro: {
     compressPublicAssets: true,
+  },
+
+  // 安全 headers（SSR 回應由 nitro 套用；Vercel 的 vercel.json headers 不會套到 serverless 頁面）
+  routeRules: {
+    '/**': {
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+        'Content-Security-Policy':
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https:; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+      },
+    },
   },
 
   typescript: {

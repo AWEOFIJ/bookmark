@@ -8,6 +8,10 @@ export default defineEventHandler(async (event) => {
   if (!file || !file.data || file.data.length === 0) {
     throw createError({ statusCode: 400, statusMessage: '請選擇 .html 檔案' })
   }
+  // 防超大檔案吃記憶體
+  if (file.data.length > 10 * 1024 * 1024) {
+    throw createError({ statusCode: 400, statusMessage: '檔案過大（上限 10MB）' })
+  }
 
   const html = Buffer.from(file.data).toString('utf-8')
   const { bookmarks, collections } = parseNetscapeHtml(html)

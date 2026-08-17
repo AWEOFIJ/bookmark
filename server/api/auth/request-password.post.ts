@@ -12,6 +12,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Email 格式不正確' })
   }
 
+  // 防信件轟炸：每 IP 每 10 分鐘最多 5 次；每 email 每小時最多 3 次
+  rateLimit(`pwdreq:${clientIp(event)}`, 5, 10 * 60 * 1000)
+  rateLimit(`pwdreq-mail:${email}`, 3, 60 * 60 * 1000)
+
   let user = await prisma.user.findUnique({ where: { email } })
 
   // 帳號不存在 → 自動建立（輸入 Gmail 即可使用）

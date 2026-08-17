@@ -9,6 +9,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: '請輸入帳號與密碼' })
   }
 
+  // 防暴力破解：每 IP+email 每 10 分鐘最多 5 次嘗試
+  rateLimit(`login:${clientIp(event)}:${email}`, 5, 10 * 60 * 1000)
+
   const user = await prisma.user.findUnique({ where: { email } })
   if (!user || !user.password) {
     // 沒有帳號，或帳號是 Google-only（無密碼）→ 一律顯示相同錯誤
