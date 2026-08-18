@@ -11,9 +11,13 @@ import { XMarkIcon } from '@heroicons/vue/24/solid'
 const props = defineProps<{ mobileOpen: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
+const route = useRoute()
+
 const { collections, tags, load, create } = useCollections()
 const bookmarks = useBookmarks()
 const { filters } = bookmarks
+
+// 從其他頁面點書籤/標籤 → 回主頁並套用篩選
 
 const showNewCollection = ref(false)
 const newCollectionName = ref('')
@@ -37,12 +41,22 @@ function isActive(id: string) {
   return filters.value.collection === id
 }
 
+// 從其他頁面點書籤/標籤 → 回主頁並套用篩選
+function ensureBookmarksView() {
+  emit('close')
+  if (route.path !== '/') {
+    navigateTo('/')
+  }
+}
+
 function selectCollection(id: string) {
   bookmarks.setFilter({ collection: id })
+  ensureBookmarksView()
 }
 
 function selectTag(name: string) {
   bookmarks.setFilter({ tag: filters.value.tag === name ? '' : name })
+  ensureBookmarksView()
 }
 
 // 展開有書籤的收藏夾（預設）
@@ -61,14 +75,14 @@ onMounted(() => {
     :class="mobileOpen ? 'translate-x-0' : '-translate-x-full'"
   >
     <div class="flex h-full flex-col">
-      <!-- Header -->
+      <!-- Header（點 logo 回主頁） -->
       <div class="flex items-center justify-between px-5 py-4">
-        <div class="flex items-center gap-2">
+        <NuxtLink to="/" class="flex items-center gap-2" aria-label="回到書籤主頁">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500 text-white">
             <Squares2X2Icon class="h-4.5 w-4.5" />
           </div>
           <span class="text-lg font-bold text-zinc-900 dark:text-white">bookMark</span>
-        </div>
+        </NuxtLink>
         <button class="lg:hidden" @click="emit('close')" aria-label="關閉側欄">
           <XMarkIcon class="h-5 w-5 text-zinc-500" />
         </button>

@@ -25,7 +25,7 @@ export interface MailResult {
 /**
  * 寄送密碼信。
  * - 有設定 SMTP_* → 真實寄信
- * - 未設定 → 測試模式：密碼寫入系統暫存目錄並回傳，方便開發驗證
+ * - 未設定 → 測試模式：密碼寫入 系統暫存目錄 並回傳，方便開發驗證
  */
 export async function sendPasswordEmail(to: string, password: string): Promise<MailResult> {
   const smtpHost = process.env.SMTP_HOST

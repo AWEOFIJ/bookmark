@@ -66,7 +66,7 @@ async function submitLogin() {
   error.value = ''
   try {
     await login(email.value.trim(), password.value)
-    const returnTo = typeof route.query.returnTo === 'string' ? route.query.returnTo : '/'
+    const returnTo = typeof route.query.returnTo === 'string' && route.query.returnTo.startsWith('/') ? route.query.returnTo : '/'
     await navigateTo(returnTo)
   } catch (e: any) {
     error.value = e?.data?.statusMessage || '登入失敗'
@@ -139,6 +139,10 @@ async function loginWithGoogle() {
             <span class="text-xs text-zinc-400">或</span>
             <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-700"></div>
           </div>
+          <p class="mb-4 text-center text-xs text-zinc-400">
+            💡 若跳出 Google 密碼輸入，代表此瀏覽器未登入 Google。<br />
+            請用平常登入 Gmail 的瀏覽器開啟（App 內開啟請按「在瀏覽器中開啟」），即可直接選帳號登入
+          </p>
         </template>
 
         <!-- Step 1: Email -->
