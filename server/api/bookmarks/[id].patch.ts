@@ -42,14 +42,23 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const bookmark = await prisma.bookmark.update({
-    where: { id },
-    data,
-    include: {
-      collection: { select: { id: true, name: true, icon: true, color: true } },
-      tags: { include: { tag: { select: { id: true, name: true } } } },
-    },
-  })
+  let bookmark
+  try {
+    bookmark = await prisma.bookmark.update({
+      where: { id },
+      data,
+      include: {
+        collection: { select: { id: true, name: true, icon: true, color: true } },
+        tags: { include: { tag: { select: { id: true, name: true } } } },
+      },
+    })
+  } catch (e: any) {
+    // URL 改到已被其他書籤使用的網址 → 唯一約束衝突
+    if (e?.code === 'P2002') {
+      throw createError({ statusCode: 409, statusMessage: '已有相同網址的書籤' })
+    }
+    throw e
+  }
 
   return serializeBookmark(bookmark as any)
 })

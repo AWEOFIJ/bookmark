@@ -40,7 +40,7 @@ model Tag {
 
 model Bookmark {
   id           String        @id @default(cuid())
-  url          String
+  url          String        @unique
   title        String
   description  String?
   favicon      String?

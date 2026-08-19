@@ -6,7 +6,7 @@ const props = defineProps<{
   bookmark?: BookmarkItem | null
   initial?: { url: string; title: string } | null
 }>()
-const emit = defineEmits<{ close: []; saved: [] }>()
+const emit = defineEmits<{ close: []; saved: []; 'open-existing': [bookmark: any] }>()
 
 const bookmarks = useBookmarks()
 const { collections, tags, flatten } = useCollections()
@@ -24,6 +24,8 @@ const form = reactive({
 const fetching = ref(false)
 const saving = ref(false)
 const error = ref('')
+// 方案 C：儲存時發現 URL 已存在 → 顯示「已收藏過」警告
+const dupExisting = ref<any>(null)
 
 // 編輯模式載入
 watch(
@@ -132,9 +134,23 @@ async function save() {
     emit('saved')
     emit('close')
   } catch (e: any) {
-    error.value = e?.data?.statusMessage || '儲存失敗'
+    // URL 已存在（方案 C）→ 顯示警告 + 提供開啟原有
+    if (e?.data?.statusCode === 409) {
+      dupExisting.value = e?.data?.data?.existing ?? true
+    } else {
+      error.value = e?.data?.statusMessage || '儲存失敗'
+    }
   } finally {
     saving.value = false
+  }
+}
+
+// 開啟已收藏的書籤 → 同一個 modal 切換成編輯模式（父層 openEdit）
+function openExisting() {
+  const ex = dupExisting.value
+  dupExisting.value = null
+  if (ex && typeof ex === 'object') {
+    emit('open-existing', ex)
   }
 }
 </script>
@@ -239,6 +255,32 @@ async function save() {
           <input v-model="form.unread" type="checkbox" class="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500" />
           未讀
         </label>
+      </div>
+
+      <!-- 方案 C：URL 已收藏過警告 -->
+      <div
+        v-if="dupExisting"
+        class="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-900/20"
+      >
+        <p class="font-semibold text-amber-800 dark:text-amber-300">⚠️ 此網址已收藏過</p>
+        <p v-if="dupExisting !== true && dupExisting.title" class="mt-1 truncate text-amber-700 dark:text-amber-400">
+          {{ dupExisting.title }}
+        </p>
+        <p class="mt-1 text-xs text-amber-600 dark:text-amber-500">URL 唯一，無法重複儲存相同網址。</p>
+        <div class="mt-2 flex gap-2">
+          <button
+            class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+            @click="openExisting"
+          >
+            開啟原有書籤
+          </button>
+          <button
+            class="rounded-lg px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/30"
+            @click="dupExisting = null"
+          >
+            繼續編輯
+          </button>
+        </div>
       </div>
 
       <p v-if="error" class="mt-3 text-sm text-red-500">{{ error }}</p>

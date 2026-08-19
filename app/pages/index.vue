@@ -78,7 +78,7 @@ const ready = computed(() => !loading.value && !!user.value)
         />
       </div>
 
-      <BookmarkModal v-if="showAdd" :bookmark="editing" :initial="initialDraft" @close="closeAll" @saved="onSaved" />
+      <BookmarkModal v-if="showAdd" :bookmark="editing" :initial="initialDraft" @close="closeAll" @saved="onSaved" @open-existing="openEdit" />
       <ImportModal v-if="showImport" @close="closeAll" @imported="onSaved" />
     </template>
   </div>

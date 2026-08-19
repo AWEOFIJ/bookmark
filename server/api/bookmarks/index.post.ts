@@ -26,27 +26,52 @@ export default defineEventHandler(async (event) => {
 
   const tags = await parseTags(body.tags)
 
-  const bookmark = await prisma.bookmark.create({
-    data: {
-      url,
-      title,
-      description,
-      favicon,
-      note,
-      important,
-      unread,
-      collectionId,
-      tags: {
-        create: tags.map((name) => ({
-          tag: { connect: { id: name } },
-        })),
-      },
-    },
+  // URL 唯一 — 已存在 → 409（附既有書籤，前端顯示「已收藏過」警告）
+  const existingDup = await prisma.bookmark.findUnique({
+    where: { url },
     include: {
       collection: { select: { id: true, name: true, icon: true, color: true } },
       tags: { include: { tag: { select: { id: true, name: true } } } },
     },
   })
+  if (existingDup) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: '此網址已收藏過',
+      data: { existing: serializeBookmark(existingDup as any) },
+    })
+  }
+
+  let bookmark
+  try {
+    bookmark = await prisma.bookmark.create({
+      data: {
+        url,
+        title,
+        description,
+        favicon,
+        note,
+        important,
+        unread,
+        collectionId,
+        tags: {
+          create: tags.map((name) => ({
+            tag: { connect: { id: name } },
+          })),
+        },
+      },
+      include: {
+        collection: { select: { id: true, name: true, icon: true, color: true } },
+        tags: { include: { tag: { select: { id: true, name: true } } } },
+      },
+    })
+  } catch (e: any) {
+    // 併發防護：唯一約束兜底（正常路徑已被上面的 pre-check 擋下）
+    if (e?.code === 'P2002') {
+      throw createError({ statusCode: 409, statusMessage: '此網址已收藏過' })
+    }
+    throw e
+  }
 
   return serializeBookmark(bookmark as any)
 })
