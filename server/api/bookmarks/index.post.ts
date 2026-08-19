@@ -13,15 +13,14 @@ export default defineEventHandler(async (event) => {
   const important = Boolean(body.important)
   const unread = Boolean(body.unread)
 
-  // 若前端沒給 meta，後端補抓（best effort）
-  if (!title || !favicon) {
+  // meta（標題/圖示）由前端 prefetch（/api/fetch-meta）提供；
+  // 這裡不做同步抓取 — 避免儲存被慢站卡住 1~4 秒。
+  // title 空白時用網域兜底，使用者可事後編輯。
+  if (!title) {
     try {
-      const meta = await fetchUrlMeta(url)
-      if (!title) title = meta.title
-      if (!favicon) favicon = meta.favicon
-      if (!description) description = meta.description
+      title = new URL(url).hostname
     } catch {
-      if (!title) title = url
+      title = url
     }
   }
 

@@ -68,6 +68,20 @@ watch(
   { immediate: true },
 )
 
+// 貼上 / 修改 URL 後自動抓 meta（debounce 600ms）— 不用再手動按「自動抓取」
+let fetchTimer: ReturnType<typeof setTimeout> | null = null
+watch(
+  () => form.url,
+  (val) => {
+    if (props.bookmark) return // 編輯模式不自動抓
+    if (!val || !val.trim()) return
+    if (fetchTimer) clearTimeout(fetchTimer)
+    fetchTimer = setTimeout(() => {
+      if (val.trim() === form.url.trim()) fetchMeta()
+    }, 600)
+  },
+)
+
 async function fetchMeta() {
   const url = form.url.trim()
   if (!url) {
