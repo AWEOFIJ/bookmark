@@ -8,6 +8,36 @@ const UA =
 const MAX_REDIRECTS = 4
 const MAX_RESPONSE_SIZE = 2 * 1024 * 1024 // HTML 讀取上限 2MB
 
+// ── oEmbed 輕量抓取 ─────────────────────────────────────────
+// YouTube/Vimeo 頁面 HTML 極大（YouTube ~1.3MB），走 oEmbed JSON API
+// 又快又穩（也避免被 4 秒 timeout 中斷）
+async function fetchOEmbed(url: URL): Promise<UrlMeta | null> {
+  const host = url.hostname.toLowerCase()
+  const isYouTube =
+    host === 'youtube.com' || host === 'www.youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com' || host === 'youtu.be' || host.endsWith('.youtube.com')
+  const isVimeo = host === 'vimeo.com' || host === 'www.vimeo.com'
+  if (!isYouTube && !isVimeo) return null
+
+  const apiUrl = isYouTube
+    ? `https://www.youtube.com/oembed?url=${encodeURIComponent(url.toString())}&format=json`
+    : `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url.toString())}`
+
+  try {
+    const res = await fetch(apiUrl, {
+      signal: AbortSignal.timeout(4000),
+      headers: { Accept: 'application/json', 'User-Agent': UA },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { title?: string; thumbnail_url?: string }
+    const title = String(data.title || '').trim()
+    if (!title) return null
+    const favicon = data.thumbnail_url || `https://www.google.com/s2/favicons?domain=${host}&sz=64`
+    return { title, description: '', favicon, hostname: host }
+  } catch {
+    return null
+  }
+}
+
 export interface UrlMeta {
   title: string
   description: string
@@ -89,7 +119,8 @@ export async function fetchUrlMeta(rawUrl: string): Promise<UrlMeta> {
       await assertPublicUrl(current)
       res = await fetch(current.toString(), {
         redirect: 'manual',
-        signal: AbortSignal.timeout(8000),
+        // 4 秒上限：儲存書籤時不能讓使用者等太久（慢站直接跳過 meta 補抓）
+        signal: AbortSignal.timeout(4000),
         headers: {
           'User-Agent': UA,
           Accept: 'text/html,application/xhtml+xml',
@@ -120,7 +151,27 @@ export async function fetchUrlMeta(rawUrl: string): Promise<UrlMeta> {
     }
   }
 
-  const html = (await res.text()).slice(0, MAX_RESPONSE_SIZE)
+  // oEmbed 優先（YouTube/Vimeo）：輕量 JSON，避免下載巨型 HTML
+  const oembedMeta = await fetchOEmbed(current)
+  if (oembedMeta) return oembedMeta
+
+  // 串流讀取 body，最多 MAX_RESPONSE_SIZE bytes — 大頁面不用等完整下載
+  let html = ''
+  const reader = res.body?.getReader()
+  if (reader) {
+    try {
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        html += Buffer.from(value).toString('utf-8')
+        if (html.length >= MAX_RESPONSE_SIZE) break
+      }
+    } finally {
+      reader.cancel().catch(() => {})
+    }
+  } else {
+    html = (await res.text()).slice(0, MAX_RESPONSE_SIZE)
+  }
 
   const $ = cheerio.load(html)
 
